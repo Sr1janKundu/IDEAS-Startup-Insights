@@ -47,7 +47,7 @@ def ingestion_gui():
     display_company_names(updated_company_names, search_button, search_query)
 
     st.divider()
-    new_company_name = st.text_input('Type-in company name')
+    new_company_name = st.text_input('Type-in company name (Do NOT use abbreviations such as "pvt." or  "ltd.")')
     if st.button('Upload company name') and new_company_name:
         new_company_name = new_company_name.upper()
         df = pd.DataFrame([new_company_name], columns=['Company Names'])
