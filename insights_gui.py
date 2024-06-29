@@ -104,7 +104,7 @@ def display_specific_insights(company_name, source_name, pdf_elements=None):
                     pdf_elements.append(table)
                     pdf_elements.append(Spacer(1, 12))
                     
-                if data['Financials'] == 'Not available for free':
+                if data['Financials'] == 'Not available for free' or data['Financials'] == 'Not available':
                     break
                 else:
                     st.subheader('Financials')
@@ -148,7 +148,6 @@ def insights_gui():
     source_list = source_df['sources']
 
     if df.empty:
-        # Your existing code for when df is empty
         company_option1 = st.selectbox(
             label="Select Company",
             options=company_list,

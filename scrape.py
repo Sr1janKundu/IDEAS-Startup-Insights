@@ -22,7 +22,8 @@ def close_tabs(driver):
 def scrape(name, source, source_url):
     # Define the path to the ChromeDriver executable
     #MYCHROME = "E:/TIH-ISI/Scraping_Selenium/test/chromedriver.exe"
-    ADBLOCKER_EXTENSION_PATH = "E:/TIH-ISI/Scraping_Selenium/test/AdBlock_6.2.0.0.crx"
+    # ADBLOCKER_EXTENSION_PATH = "E:/TIH-ISI/Scraping_Selenium/test/AdBlock_6.2.0.0.crx"
+    ADBLOCKER_EXTENSION_PATH = "AdBlock_6.2.0.0.crx"
     # Set up Chrome options
     chrome_options = ChromeOptions()
     chrome_options.add_extension(ADBLOCKER_EXTENSION_PATH)
@@ -120,7 +121,8 @@ def scrape(name, source, source_url):
                     company_details[key] = company_info[j + 1]
 
         json_data["Company Details"] = company_details
-
+        # json_data["Company Details"]["Activity"] = re.search(r"Other computer related activities", json_data["Company Details"]["Activity"]).group(0) if re.search(r"Other computer related activities", json_data["Company Details"]["Activity"]) else json_data["Company Details"]["Activity"]
+        json_data["Company Details"]["Activity"] = json_data["Company Details"]["Activity"][:33] + '...' if len(json_data["Company Details"]["Activity"]) > 33 else json_data["Company Details"]["Activity"]
         cin_link_element = driver.find_element(By.XPATH, '//*[@id="block-system-main"]/div[2]/div[1]/div[1]/div[1]/table/thead/tr/td[2]/p/a')
 
         cin = cin_link_element.text
@@ -183,76 +185,80 @@ def scrape(name, source, source_url):
 
         json_data["Registration Details"] = reg_details
 
-        financials_tab = driver.find_element(By.XPATH, '//*[@id="financials-tab"]')
-        financials_tab.click()
+        try: 
+            financials_tab = driver.find_element(By.XPATH, '//*[@id="financials-tab"]')
+            financials_tab.click()
 
-        wait = WebDriverWait(driver, 5)
-        def find_index_with_prefix(lst, prefix):
-            for i, element in enumerate(lst):
-                if re.match(f"^{re.escape(prefix)}", element):
-                    return i
-            return -1
+            wait = WebDriverWait(driver, 5)
+            def find_index_with_prefix(lst, prefix):
+                for i, element in enumerate(lst):
+                    if re.match(f"^{re.escape(prefix)}", element):
+                        return i
+                return -1
 
-        # Function to check if any content is blurred
-        def is_content_blurred(driver):
-            blurred_elements = driver.find_elements(By.CLASS_NAME, 'blur-content')
-            return len(blurred_elements) > 0
+            # Function to check if any content is blurred
+            def is_content_blurred(driver):
+                blurred_elements = driver.find_elements(By.CLASS_NAME, 'blur-content')
+                return len(blurred_elements) > 0
 
-        # Scrape data
-        financial_details = driver.find_element(By.XPATH, '//*[@id="financial-details-financial-tab"]/div').text
-        financial_details_text = financial_details.split("\n")
+            # Scrape data
+            financial_details = driver.find_element(By.XPATH, '//*[@id="financial-details-financial-tab"]/div').text
+            financial_details_text = financial_details.split("\n")
 
-        # Check if content is blurred
-        if is_content_blurred(driver):
-            json_data["Financials"] = "Not available for free"
-        else:
-            ind = find_index_with_prefix(financial_details_text, 'Current Ratio')
-            financial_details_text_cleaned = [strng for strng in financial_details_text[:ind+1] if strng != 'For a detailed balance sheet']
-            brief_financial_report = financial_details_text_cleaned[2:7]
+            # Check if content is blurred
+            if is_content_blurred(driver):
+                json_data["Financials"] = "Not available for free"
+            else:
+                ind = find_index_with_prefix(financial_details_text, 'Current Ratio')
+                financial_details_text_cleaned = [strng for strng in financial_details_text[:ind+1] if strng != 'For a detailed balance sheet']
+                brief_financial_report = financial_details_text_cleaned[2:7]
 
-            # Extracting specific financial metrics
-            metrics = {
-                'Operating Revenue': financial_details_text_cleaned[7].split()[-3:],
-                'EBITDA': financial_details_text_cleaned[8].split()[-2],
-                'Networth': financial_details_text_cleaned[9].split()[-2],
-                'Debt/Equity Ratio': financial_details_text_cleaned[10].split()[-1],
-                'Return on Equity': financial_details_text_cleaned[11].split()[-2],
-                'Total Assets': financial_details_text_cleaned[12].split()[-2],
-                'Fixed Assets': financial_details_text_cleaned[13].split()[-2],
-                'Current Assets': financial_details_text_cleaned[14].split()[-2],
-                'Current Liabilities': financial_details_text_cleaned[15].split()[-2],
-                'Trade Receivables': financial_details_text_cleaned[16].split()[-2],
-                'Trade Payables': financial_details_text_cleaned[17].split()[-2],
-                'Current Ratio': financial_details_text_cleaned[18].split()[-1]
-            }
+                # Extracting specific financial metrics
+                metrics = {
+                    'Operating Revenue': financial_details_text_cleaned[7].split()[-3:],
+                    'EBITDA': financial_details_text_cleaned[8].split()[-2],
+                    'Networth': financial_details_text_cleaned[9].split()[-2],
+                    'Debt/Equity Ratio': financial_details_text_cleaned[10].split()[-1],
+                    'Return on Equity': financial_details_text_cleaned[11].split()[-2],
+                    'Total Assets': financial_details_text_cleaned[12].split()[-2],
+                    'Fixed Assets': financial_details_text_cleaned[13].split()[-2],
+                    'Current Assets': financial_details_text_cleaned[14].split()[-2],
+                    'Current Liabilities': financial_details_text_cleaned[15].split()[-2],
+                    'Trade Receivables': financial_details_text_cleaned[16].split()[-2],
+                    'Trade Payables': financial_details_text_cleaned[17].split()[-2],
+                    'Current Ratio': financial_details_text_cleaned[18].split()[-1]
+                }
 
-            # Formatting the metrics values
-            for key, value in metrics.items():
-                # Join the split parts for 'Operating Revenue'
-                if isinstance(value, list):
-                    value = ' '.join(value)
-                # Add plus sign for positive values if not present
-                if value[0] not in ['+', '-']:
-                    value = '+' + value
-                metrics[key] = value
+                # Formatting the metrics values
+                for key, value in metrics.items():
+                    # Join the split parts for 'Operating Revenue'
+                    if isinstance(value, list):
+                        value = ' '.join(value)
+                    # Add plus sign for positive values if not present
+                    if value[0] not in ['+', '-']:
+                        value = '+' + value
+                    metrics[key] = value
 
-            # Creating the final dictionary
-            financial_report = {
-                'Brief Financial Report': brief_financial_report,
-                'Operating Revenue': metrics['Operating Revenue'],
-                'EBITDA': metrics['EBITDA'],
-                'Networth': metrics['Networth'],
-                'Debt/Equity Ratio': metrics['Debt/Equity Ratio'],
-                'Return on Equity': metrics['Return on Equity'],
-                'Total Assets': metrics['Total Assets'],
-                'Fixed Assets': metrics['Fixed Assets'],
-                'Current Assets': metrics['Current Assets'],
-                'Current Liabilities': metrics['Current Liabilities'],
-                'Trade Receivables': metrics['Trade Receivables'],
-                'Trade Payables': metrics['Trade Payables'],
-                'Current Ratio': metrics['Current Ratio']
-            }
+                # Creating the final dictionary
+                financial_report = {
+                    'Brief Financial Report': brief_financial_report,
+                    'Operating Revenue': metrics['Operating Revenue'],
+                    'EBITDA': metrics['EBITDA'],
+                    'Networth': metrics['Networth'],
+                    'Debt/Equity Ratio': metrics['Debt/Equity Ratio'],
+                    'Return on Equity': metrics['Return on Equity'],
+                    'Total Assets': metrics['Total Assets'],
+                    'Fixed Assets': metrics['Fixed Assets'],
+                    'Current Assets': metrics['Current Assets'],
+                    'Current Liabilities': metrics['Current Liabilities'],
+                    'Trade Receivables': metrics['Trade Receivables'],
+                    'Trade Payables': metrics['Trade Payables'],
+                    'Current Ratio': metrics['Current Ratio']
+                }
             json_data["Financials"] = financial_report
+        except:
+            # Handle the case where the financial details tab is not found
+            json_data["Financials"] = 'Not available'
         # financial_details = driver.find_element(By.XPATH, '//*[@id="financial-details-financial-tab"]/div').text
         # financial_details_text = financial_details.split("\n")
         # def find_index_with_prefix(lst, prefix):
